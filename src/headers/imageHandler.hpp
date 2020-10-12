@@ -6,9 +6,6 @@
 #include <iomanip>	// for std::cout and format
 #include <memory>	// for unique_ptr
 
-#include "./stb_image.h"
-#include "./stb_image_write.h"
-
 namespace ImageHandler {
 	class Image {
 		public:
