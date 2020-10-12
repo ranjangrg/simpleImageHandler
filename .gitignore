@@ -1,0 +1,6 @@
+# ignore main exec file
+main
+test
+
+# temporary image for testing
+data/*
