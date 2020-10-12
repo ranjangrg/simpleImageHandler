@@ -16,29 +16,38 @@ namespace ImageHandler {
 
 		Image();
 		Image(size_t width, size_t height, size_t nChannels);
+
+		virtual void infoAll();	// prints all channel(s) info
+		virtual void infoChannel(size_t channelIdx);	// only prints specified channel
 	};
 
-	// a struct that holds image data including number of channels and actual pixel data per channel
 	class ImageUC : public Image{
 		public:
 		unsigned char *imgData;
 
 		ImageUC();
 		ImageUC(size_t width, size_t height, size_t nChannels);
+		~ImageUC();
 
-		void infoAll();	// prints all channel(s) info
-		void infoChannel(size_t channelIdx);	// only prints specified channel
+		void infoAll() override;	// prints all channel(s) info
+		void infoChannel(size_t channelIdx) override;	// only prints specified channel
 	};
 
 	class ImageV : public Image {
 		public:
 		std::vector<unsigned char> imgData;
+
+		ImageV();
+		ImageV(size_t width, size_t height, size_t nChannels);
+
+		void infoAll() override;	// prints all channel(s) info
+		void infoChannel(size_t channelIdx) override;	// only prints specified channel
 	};
 }
 
 namespace ImageHandler {
-	std::unique_ptr<ImageHandler::ImageUC> getImageDataAsUC(const char* fileName);
-	std::unique_ptr<ImageHandler::ImageV> getImageDataAsV(const char* fileName);
+	std::unique_ptr<ImageHandler::ImageUC> getImageDataAsImageUC(const char* fileName);
+	std::unique_ptr<ImageHandler::ImageV> getImageDataAsImageV(const char* fileName);
 }
 
 #endif

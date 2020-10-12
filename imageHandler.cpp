@@ -10,6 +10,9 @@
 	#include "./stb_image_write.h"
 #endif
 
+//	======================
+//	Image class definition 
+//	====================== 
 ImageHandler::Image::Image() {
 	this->width = 0;
 	this->height = 0;
@@ -22,19 +25,36 @@ ImageHandler::Image::Image(size_t width, size_t height, size_t nChannels) {
 	this->nChannels = nChannels;
 }
 
+void ImageHandler::Image::infoAll() {
+	size_t currChannel = 0;
+	std::cout << "Info:" << std::endl;
+	std::cout << "Dimensions: " << width << " x " << height << std::endl;
+}
+
+void ImageHandler::Image::infoChannel(size_t channelIdx) {
+	std::cout << "Channel: " << channelIdx << std::endl;
+}
+
+//	========================
+//	ImageUC class definition 
+//	======================== 
 ImageHandler::ImageUC::ImageUC() : ImageHandler::Image::Image() {
 	this->imgData = new unsigned char[0];
 }
 
 ImageHandler::ImageUC::ImageUC(size_t width, size_t height, size_t nChannels) : 
 	ImageHandler::Image::Image(width, height, nChannels) {
-	this->imgData = new unsigned char[0];
+	this->imgData = new unsigned char[width * height * nChannels];
+}
+
+ImageHandler::ImageUC::~ImageUC() {
+	//std::cout << "Deleting ImageUC\n";
+	delete this->imgData;
 }
 
 void ImageHandler::ImageUC::infoAll() {
+	ImageHandler::Image::infoAll();
 	size_t currChannel = 0;
-	std::cout << "Info:" << std::endl;
-	std::cout << "Dimensions: " << width << " x " << height << std::endl;
 	for (size_t currChannel = 0; currChannel < this->nChannels; ++currChannel) {
 		std::cout << "Channel: " << currChannel << std::endl;
 		for (size_t rowIdx = 0; rowIdx < this->height; ++rowIdx) {
@@ -48,7 +68,7 @@ void ImageHandler::ImageUC::infoAll() {
 }
 
 void ImageHandler::ImageUC::infoChannel(size_t channelIdx) {
-	std::cout << "Channel: " << channelIdx << std::endl;
+	ImageHandler::Image::infoChannel(channelIdx);
 	for (size_t rowIdx = 0; rowIdx < this->height; ++rowIdx) {
 		for (size_t colIdx = 0; colIdx < this->width; ++colIdx) {
 			unsigned char* currPixel = this->imgData + ( (rowIdx * this->width + colIdx) * this->nChannels );
@@ -58,7 +78,52 @@ void ImageHandler::ImageUC::infoChannel(size_t channelIdx) {
 	}
 }
 
-std::unique_ptr<ImageHandler::ImageUC> ImageHandler::getImageDataAsUC(const char* fileName) {
+//	======================= 
+//	ImageV class definition 
+//	======================= 
+ImageHandler::ImageV::ImageV() : ImageHandler::Image::Image() {
+	this->imgData.reserve(0);
+}
+
+ImageHandler::ImageV::ImageV(size_t width, size_t height, size_t nChannels) : 
+	ImageHandler::Image::Image(width, height, nChannels) {
+	this->imgData.reserve(width * height * nChannels);
+}
+
+void ImageHandler::ImageV::infoAll() {
+	ImageHandler::Image::infoAll();
+	size_t currChannel = 0;
+	size_t imageRes = width * height;
+
+	for (size_t currChannel = 0; currChannel < this->nChannels; ++currChannel) {
+		std::cout << "Channel: " << currChannel << std::endl;
+		for (size_t rowIdx = 0; rowIdx < this->height; ++rowIdx) {
+			for (size_t colIdx = 0; colIdx < this->width; ++colIdx) {
+				unsigned char currData = this->imgData.at( (rowIdx * this->width + colIdx) + (imageRes * currChannel) );
+				std::cout << std::setw(4) << int(currData) << ' ';				
+			}
+			std::cout << std::endl;
+		}
+	}
+}
+
+void ImageHandler::ImageV::infoChannel(size_t channelIdx) {
+	ImageHandler::Image::infoChannel(channelIdx);
+	size_t imageRes = width * height;
+	for (size_t rowIdx = 0; rowIdx < this->height; ++rowIdx) {
+		for (size_t colIdx = 0; colIdx < this->width; ++colIdx) {
+			unsigned char currData = this->imgData.at( (rowIdx * this->width + colIdx) + (imageRes * channelIdx) );
+			std::cout << std::setw(4) << int(currData) << ' ';			
+		}
+		std::cout << std::endl;
+	}
+}
+
+
+//	===============================
+//	ImageHandler method definitions
+//	===============================
+std::unique_ptr<ImageHandler::ImageUC> ImageHandler::getImageDataAsImageUC(const char* fileName) {
 	int width, height, nChannels;
 	unsigned char * imgData = stbi_load(fileName, &width, &height, &nChannels, 0);
 
@@ -78,6 +143,30 @@ std::unique_ptr<ImageHandler::ImageUC> ImageHandler::getImageDataAsUC(const char
 
 	std::unique_ptr<ImageHandler::ImageUC> imgPtr = std::make_unique<ImageHandler::ImageUC>(width, height, nChannels);
 	imgPtr->imgData = imgData;
+
+	return std::move(imgPtr);
+}
+
+std::unique_ptr<ImageHandler::ImageV> ImageHandler::getImageDataAsImageV(const char* fileName) {
+	std::unique_ptr<ImageHandler::ImageUC> imgUC = ImageHandler::getImageDataAsImageUC(fileName);
+	unsigned char * imgData = imgUC->imgData;
+	int width = imgUC->width;
+	int height = imgUC->height;
+	int nChannels = imgUC->nChannels;
+
+	std::unique_ptr<ImageHandler::ImageV> imgPtr = std::make_unique<ImageHandler::ImageV>(width, height, nChannels);
+	size_t imageRes = width * height;
+	for (size_t channelIdx = 0; channelIdx < nChannels; ++channelIdx) {
+		for (size_t rowIdx = 0; rowIdx < imgPtr->height; ++rowIdx) {
+			for (size_t colIdx = 0; colIdx < imgPtr->width; ++colIdx) {
+				unsigned char* currPixel = imgUC->imgData + ( (rowIdx * imgPtr->width + colIdx) * nChannels );
+				imgPtr->imgData.push_back(currPixel[channelIdx]);
+			}
+		}
+	}
+
+	std::cout << "Channel count: " << nChannels << std::endl;
+
 	return std::move(imgPtr);
 }
 
