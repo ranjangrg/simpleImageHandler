@@ -13,12 +13,14 @@ namespace ImageHandler {
 	class Image {
 		public:
 		size_t width, height, nChannels;
+
+		Image();
+		Image(size_t width, size_t height, size_t nChannels);
 	};
 
 	// a struct that holds image data including number of channels and actual pixel data per channel
-	class ImageUC {
+	class ImageUC : public Image{
 		public:
-		size_t width, height, nChannels;
 		unsigned char *imgData;
 
 		ImageUC();
@@ -28,10 +30,9 @@ namespace ImageHandler {
 		void infoChannel(size_t channelIdx);	// only prints specified channel
 	};
 
-	class ImageV {
+	class ImageV : public Image {
 		public:
-		size_t width, height, nChannels;
-		std::vector<unsigned char> data;
+		std::vector<unsigned char> imgData;
 	};
 }
 

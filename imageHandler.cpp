@@ -10,17 +10,24 @@
 	#include "./stb_image_write.h"
 #endif
 
-ImageHandler::ImageUC::ImageUC() {
+ImageHandler::Image::Image() {
 	this->width = 0;
 	this->height = 0;
 	this->nChannels = 0;
-	this->imgData = new unsigned char[0];
 }
 
-ImageHandler::ImageUC::ImageUC(size_t width, size_t height, size_t nChannels) {
+ImageHandler::Image::Image(size_t width, size_t height, size_t nChannels) {
 	this->width = width;
 	this->height = height;
 	this->nChannels = nChannels;
+}
+
+ImageHandler::ImageUC::ImageUC() : ImageHandler::Image::Image() {
+	this->imgData = new unsigned char[0];
+}
+
+ImageHandler::ImageUC::ImageUC(size_t width, size_t height, size_t nChannels) : 
+	ImageHandler::Image::Image(width, height, nChannels) {
 	this->imgData = new unsigned char[0];
 }
 
