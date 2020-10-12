@@ -40,11 +40,18 @@ namespace ImageHandler {
 		void infoAll() override;	// prints all channel(s) info
 		void infoChannel(size_t channelIdx) override;	// only prints specified channel
 	};
+
 }
 
 namespace ImageHandler {
-	std::unique_ptr<ImageHandler::ImageUC> getImageDataAsImageUC(const char* fileName);
-	std::unique_ptr<ImageHandler::ImageV> getImageDataAsImageV(const char* fileName);
+	std::unique_ptr<ImageUC> getImageDataAsImageUC(const char* fileName);
+	std::unique_ptr<ImageV> getImageDataAsImageV(const char* fileName);
+
+	std::unique_ptr<unsigned char> imageVToUC(std::unique_ptr<ImageV>& imageDataPtr);
+
+	void _printUC(unsigned char* imgData, size_t width, size_t height, size_t nChannels);
+
+	int writeImageDataToFile(std::unique_ptr<ImageV>& imageDataPtr, const char* fileToWrite);
 }
 
 #endif

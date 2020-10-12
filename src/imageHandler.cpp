@@ -92,7 +92,6 @@ ImageHandler::ImageV::ImageV(size_t width, size_t height, size_t nChannels) :
 
 void ImageHandler::ImageV::infoAll() {
 	ImageHandler::Image::infoAll();
-	size_t currChannel = 0;
 	size_t imageRes = width * height;
 
 	for (size_t currChannel = 0; currChannel < this->nChannels; ++currChannel) {
@@ -170,3 +169,71 @@ std::unique_ptr<ImageHandler::ImageV> ImageHandler::getImageDataAsImageV(const c
 	return std::move(imgPtr);
 }
 
+std::unique_ptr<unsigned char> ImageHandler::imageVToUC(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr) {
+	std::unique_ptr<unsigned char> dataPtr = std::make_unique<unsigned char>(
+		imageDataPtr->width * imageDataPtr->height * imageDataPtr->nChannels
+	);
+	size_t imageRes = imageDataPtr->width * imageDataPtr->height;
+	size_t dataCounter = 0;
+
+	for (size_t rowIdx = 0; rowIdx < imageDataPtr->height; ++rowIdx) {
+		for (size_t colIdx = 0; colIdx < imageDataPtr->width; ++colIdx) {
+			for (size_t currChannel = 0; currChannel < imageDataPtr->nChannels; ++currChannel) {
+				size_t imageDataIdx = (rowIdx * imageDataPtr->width + colIdx) + (imageRes * currChannel);
+				unsigned char currData = imageDataPtr->imgData.at( imageDataIdx );
+				dataPtr.get()[dataCounter++] = currData;
+			}
+		}
+	}
+
+	return std::move(dataPtr);
+}
+
+void ImageHandler::_printUC(unsigned char* imgData, size_t width, size_t height, size_t nChannels) {
+	std::cout << "haha\n";
+	size_t imageRes = width * height;
+
+	for (size_t currChannel = 0; currChannel < nChannels; ++currChannel) {
+		std::cout << "Channel: " << currChannel << std::endl;
+		for (size_t rowIdx = 0; rowIdx < height; ++rowIdx) {
+			for (size_t colIdx = 0; colIdx < width; ++colIdx) {
+				unsigned char* currPixel = imgData + ( (rowIdx * width + colIdx) * nChannels );
+				std::cout << std::setw(4) << int(currPixel[currChannel]) << ' ';				
+			}
+			std::cout << std::endl;
+		}
+	}
+}
+
+
+int ImageHandler::writeImageDataToFile(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr, const char* fileToWrite) {
+	std::unique_ptr<unsigned char> ucData = ImageHandler::imageVToUC(imageDataPtr);
+	//unsigned char* imageDataAsUC = ucData.release();
+	unsigned char* imageDataAsUC = ucData.get();
+	size_t width = imageDataPtr->width;
+	size_t height = imageDataPtr->height;
+	size_t nChannels = imageDataPtr->nChannels;
+
+	// copy to local pointer
+	size_t dataCount = width * height * nChannels;
+	unsigned char* imageData = new unsigned char [dataCount];
+	//unsigned char imageData[dataCount];
+	for (size_t idx = 0; idx < dataCount; ++idx) {
+		//imageData[idx] = 128;
+		std::cout << int('imageDataAsUC[idx]') << ' ';
+		imageData[idx] = imageDataAsUC[idx];
+	}
+	std::cout <<  "\nTest\n";
+
+	//ImageHandler::_printUC(imageData, imageDataPtr->width, imageDataPtr->height, imageDataPtr->nChannels);
+
+	int writeSuccessful = stbi_write_png(
+		fileToWrite,
+		width, height, nChannels,
+		imageDataAsUC,
+		width * nChannels
+	);
+
+	//delete imageDataAsUC;
+	return writeSuccessful;
+}
