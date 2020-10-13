@@ -18,6 +18,7 @@ namespace ImageHandler {
 		virtual void infoChannel(size_t channelIdx);	// only prints specified channel
 	};
 
+	// image data stored as unsigned char
 	class ImageUC : public Image{
 		public:
 		unsigned char *imgData;
@@ -30,6 +31,7 @@ namespace ImageHandler {
 		void infoChannel(size_t channelIdx) override;	// only prints specified channel
 	};
 
+	// image data stored as vector
 	class ImageV : public Image {
 		public:
 		std::vector<unsigned char> imgData;
@@ -50,7 +52,13 @@ namespace ImageHandler {
 
 	unsigned char* imageVToUC(std::unique_ptr<ImageV>& imageDataPtr);
 
+	// just for debugging; can be deleted once prod version is established
 	void _printUC(unsigned char* imgData, size_t width, size_t height, size_t nChannels);
+
+	// debug only
+	// just puts RGB pixel in the middle of image (4 channels accepted)
+	void modifyData(std::unique_ptr<ImageUC>& imageDataPtr);
+	void modifyData(std::unique_ptr<ImageV>& imageDataPtr);
 
 	int writeRawImageDataToFile(const char* fileToWrite, size_t width, size_t height, size_t nChannels, unsigned char* imageData);
 	int writeImageUCDataToFile(std::unique_ptr<ImageUC>& imageDataPtr, const char* fileToWrite);

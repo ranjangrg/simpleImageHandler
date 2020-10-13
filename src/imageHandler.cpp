@@ -192,7 +192,6 @@ unsigned char* ImageHandler::imageVToUC(std::unique_ptr<ImageHandler::ImageV>& i
 
 void ImageHandler::_printUC(unsigned char* imgData, size_t width, size_t height, size_t nChannels) {
 	size_t imageRes = width * height;
-
 	for (size_t currChannel = 0; currChannel < nChannels; ++currChannel) {
 		std::cout << "Channel: " << currChannel << std::endl;
 		for (size_t rowIdx = 0; rowIdx < height; ++rowIdx) {
@@ -203,6 +202,44 @@ void ImageHandler::_printUC(unsigned char* imgData, size_t width, size_t height,
 			std::cout << std::endl;
 		}
 	}
+}
+
+void ImageHandler::modifyData(std::unique_ptr<ImageHandler::ImageUC>& imageDataPtr) {
+	size_t midpointIdx = 
+		((imageDataPtr->width * (imageDataPtr->height / 2)) + (imageDataPtr->width / 2) ) * imageDataPtr->nChannels;
+	size_t midpointIdxTemp = midpointIdx;
+	imageDataPtr->imgData[midpointIdxTemp++] = 255;
+	imageDataPtr->imgData[midpointIdxTemp++] = 0;
+	imageDataPtr->imgData[midpointIdxTemp++] = 0;
+	imageDataPtr->imgData[midpointIdxTemp++] = 255;
+	midpointIdxTemp = midpointIdx - imageDataPtr->nChannels;
+	imageDataPtr->imgData[midpointIdxTemp++] = 0;
+	imageDataPtr->imgData[midpointIdxTemp++] = 255;
+	imageDataPtr->imgData[midpointIdxTemp++] = 0;
+	imageDataPtr->imgData[midpointIdxTemp++] = 255;
+	midpointIdxTemp = midpointIdx + imageDataPtr->nChannels;
+	imageDataPtr->imgData[midpointIdxTemp++] = 0;
+	imageDataPtr->imgData[midpointIdxTemp++] = 0;
+	imageDataPtr->imgData[midpointIdxTemp++] = 255;
+	imageDataPtr->imgData[midpointIdxTemp++] = 255;
+}
+
+void ImageHandler::modifyData(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr) {
+	size_t midpointIdx = size_t( 
+		((imageDataPtr->height * imageDataPtr->width) / 2) - (imageDataPtr->width / 2)
+		);
+	size_t midpointIdxTemp = midpointIdx;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 0) = 255;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 1) = 0;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 2) = 0;
+	midpointIdxTemp = midpointIdx - 1;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 0) = 0;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 1) = 255;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 2) = 0;
+	midpointIdxTemp = midpointIdx + 1;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 0) = 0;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 1) = 0;
+	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 2) = 255;
 }
 
 int ImageHandler::writeRawImageDataToFile(
