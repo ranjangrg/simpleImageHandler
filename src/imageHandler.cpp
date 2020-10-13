@@ -223,16 +223,11 @@ int ImageHandler::writeImageUCDataToFile(
 		std::unique_ptr<ImageHandler::ImageUC>& imageDataPtr, 
 		const char* fileToWrite 
 	) {
-	size_t width = imageDataPtr->width;
-	size_t height = imageDataPtr->height;
-	size_t nChannels = imageDataPtr->nChannels;
-
 	int writeSuccessful = ImageHandler::writeRawImageDataToFile(
 		fileToWrite,
 		imageDataPtr->width, imageDataPtr->height, imageDataPtr->nChannels,
 		imageDataPtr->imgData
 	);
-
 	return true;
 }
 
