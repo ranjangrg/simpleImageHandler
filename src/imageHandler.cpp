@@ -90,6 +90,11 @@ ImageHandler::ImageV::ImageV(size_t width, size_t height, size_t nChannels) :
 	this->imgData.reserve(width * height * nChannels);
 }
 
+ImageHandler::ImageV::~ImageV() {
+	//std::cout << "Deleting ImageV\n";
+	this->imgData.clear();
+}
+
 void ImageHandler::ImageV::infoAll() {
 	ImageHandler::Image::infoAll();
 	size_t imageRes = width * height;
@@ -163,16 +168,13 @@ std::unique_ptr<ImageHandler::ImageV> ImageHandler::getImageDataAsImageV(const c
 			}
 		}
 	}
-
-	std::cout << "Channel count: " << nChannels << std::endl;
-
 	return std::move(imgPtr);
 }
 
-std::unique_ptr<unsigned char> ImageHandler::imageVToUC(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr) {
-	std::unique_ptr<unsigned char> dataPtr = std::make_unique<unsigned char>(
+unsigned char* ImageHandler::imageVToUC(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr) {
+	unsigned char* dataPtr = new unsigned char[
 		imageDataPtr->width * imageDataPtr->height * imageDataPtr->nChannels
-	);
+	]();
 	size_t imageRes = imageDataPtr->width * imageDataPtr->height;
 	size_t dataCounter = 0;
 
@@ -181,16 +183,14 @@ std::unique_ptr<unsigned char> ImageHandler::imageVToUC(std::unique_ptr<ImageHan
 			for (size_t currChannel = 0; currChannel < imageDataPtr->nChannels; ++currChannel) {
 				size_t imageDataIdx = (rowIdx * imageDataPtr->width + colIdx) + (imageRes * currChannel);
 				unsigned char currData = imageDataPtr->imgData.at( imageDataIdx );
-				dataPtr.get()[dataCounter++] = currData;
+				dataPtr[dataCounter++] = currData;
 			}
 		}
 	}
-
-	return std::move(dataPtr);
+	return dataPtr;
 }
 
 void ImageHandler::_printUC(unsigned char* imgData, size_t width, size_t height, size_t nChannels) {
-	std::cout << "haha\n";
 	size_t imageRes = width * height;
 
 	for (size_t currChannel = 0; currChannel < nChannels; ++currChannel) {
@@ -198,42 +198,54 @@ void ImageHandler::_printUC(unsigned char* imgData, size_t width, size_t height,
 		for (size_t rowIdx = 0; rowIdx < height; ++rowIdx) {
 			for (size_t colIdx = 0; colIdx < width; ++colIdx) {
 				unsigned char* currPixel = imgData + ( (rowIdx * width + colIdx) * nChannels );
-				std::cout << std::setw(4) << int(currPixel[currChannel]) << ' ';				
+				std::cout << std::setw(4) << int(currPixel[currChannel]) << ' ';			
 			}
 			std::cout << std::endl;
 		}
 	}
 }
 
+int ImageHandler::writeRawImageDataToFile(
+		const char* fileToWrite,
+		size_t width, size_t height, size_t nChannels,
+		unsigned char* imageData
+	) {
+	int writeSuccessful = stbi_write_png(
+		fileToWrite,
+		width, height, nChannels,
+		imageData,
+		width * nChannels
+	);
+	return writeSuccessful;
+}
 
-int ImageHandler::writeImageDataToFile(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr, const char* fileToWrite) {
-	std::unique_ptr<unsigned char> ucData = ImageHandler::imageVToUC(imageDataPtr);
-	//unsigned char* imageDataAsUC = ucData.release();
-	unsigned char* imageDataAsUC = ucData.get();
+int ImageHandler::writeImageUCDataToFile(
+		std::unique_ptr<ImageHandler::ImageUC>& imageDataPtr, 
+		const char* fileToWrite 
+	) {
 	size_t width = imageDataPtr->width;
 	size_t height = imageDataPtr->height;
 	size_t nChannels = imageDataPtr->nChannels;
 
-	// copy to local pointer
-	size_t dataCount = width * height * nChannels;
-	unsigned char* imageData = new unsigned char [dataCount];
-	//unsigned char imageData[dataCount];
-	for (size_t idx = 0; idx < dataCount; ++idx) {
-		//imageData[idx] = 128;
-		std::cout << int('imageDataAsUC[idx]') << ' ';
-		imageData[idx] = imageDataAsUC[idx];
-	}
-	std::cout <<  "\nTest\n";
-
-	//ImageHandler::_printUC(imageData, imageDataPtr->width, imageDataPtr->height, imageDataPtr->nChannels);
-
-	int writeSuccessful = stbi_write_png(
+	int writeSuccessful = ImageHandler::writeRawImageDataToFile(
 		fileToWrite,
-		width, height, nChannels,
-		imageDataAsUC,
-		width * nChannels
+		imageDataPtr->width, imageDataPtr->height, imageDataPtr->nChannels,
+		imageDataPtr->imgData
 	);
 
-	//delete imageDataAsUC;
-	return writeSuccessful;
+	return true;
+}
+
+int ImageHandler::writeImageVDataToFile(
+		std::unique_ptr<ImageHandler::ImageV>& imageDataPtr, 
+		const char* fileToWrite
+	) {
+	unsigned char* ucData = ImageHandler::imageVToUC(imageDataPtr);
+	int writeSuccessful = ImageHandler::writeRawImageDataToFile(
+		fileToWrite,
+		imageDataPtr->width, imageDataPtr->height, imageDataPtr->nChannels,
+		ucData
+	);
+	delete ucData;
+	return true;
 }
