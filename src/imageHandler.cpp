@@ -28,7 +28,8 @@ ImageHandler::Image::Image(size_t width, size_t height, size_t nChannels) {
 void ImageHandler::Image::infoAll() {
 	size_t currChannel = 0;
 	std::cout << "Info:" << std::endl;
-	std::cout << "Dimensions: " << width << " x " << height << std::endl;
+	std::cout << "Dimensions: " << this->width << " x " << this->height << '\t';
+	std::cout << "Channels: " << this->nChannels << std::endl;
 }
 
 void ImageHandler::Image::infoChannel(size_t channelIdx) {
@@ -54,16 +55,8 @@ ImageHandler::ImageUC::~ImageUC() {
 
 void ImageHandler::ImageUC::infoAll() {
 	ImageHandler::Image::infoAll();
-	size_t currChannel = 0;
 	for (size_t currChannel = 0; currChannel < this->nChannels; ++currChannel) {
-		std::cout << "Channel: " << currChannel << std::endl;
-		for (size_t rowIdx = 0; rowIdx < this->height; ++rowIdx) {
-			for (size_t colIdx = 0; colIdx < this->width; ++colIdx) {
-				unsigned char* currPixel = this->imgData + ( (rowIdx * this->width + colIdx) * this->nChannels );
-				std::cout << std::setw(4) << int(currPixel[currChannel]) << ' ';				
-			}
-			std::cout << std::endl;
-		}
+		this->infoChannel(currChannel);
 	}
 }
 
@@ -97,17 +90,8 @@ ImageHandler::ImageV::~ImageV() {
 
 void ImageHandler::ImageV::infoAll() {
 	ImageHandler::Image::infoAll();
-	size_t imageRes = width * height;
-
 	for (size_t currChannel = 0; currChannel < this->nChannels; ++currChannel) {
-		std::cout << "Channel: " << currChannel << std::endl;
-		for (size_t rowIdx = 0; rowIdx < this->height; ++rowIdx) {
-			for (size_t colIdx = 0; colIdx < this->width; ++colIdx) {
-				unsigned char currData = this->imgData.at( (rowIdx * this->width + colIdx) + (imageRes * currChannel) );
-				std::cout << std::setw(4) << int(currData) << ' ';				
-			}
-			std::cout << std::endl;
-		}
+		this->infoChannel(currChannel);
 	}
 }
 
@@ -120,6 +104,45 @@ void ImageHandler::ImageV::infoChannel(size_t channelIdx) {
 			std::cout << std::setw(4) << int(currData) << ' ';			
 		}
 		std::cout << std::endl;
+	}
+}
+
+//	======================= 
+//	ImageM class definition 
+//	======================= 
+ImageHandler::ImageM::ImageM() : ImageHandler::Image::Image() {
+	this->imgData.reserve(0);
+}
+
+ImageHandler::ImageM::ImageM(size_t width, size_t height, size_t nChannels) : 
+	ImageHandler::Image::Image(width, height, nChannels) {
+	this->imgData.reserve(nChannels);	// reserve how many channels to store
+	for (size_t idx = 0; idx < nChannels; ++idx) {
+		Matrix::MatrixStruct<unsigned char> channelData;
+		this->imgData.push_back(channelData);
+		this->imgData.at(idx).nCols = width;
+		this->imgData.at(idx).nRows = height;
+		this->imgData.at(idx).elements.reserve(width * height);
+	}
+}
+
+ImageHandler::ImageM::~ImageM() {
+	//std::cout << "Deleting ImageV\n";
+	this->imgData.clear();
+}
+
+void ImageHandler::ImageM::infoAll() {
+	ImageHandler::Image::infoAll();
+	for (size_t currChannel = 0; currChannel < this->nChannels; ++currChannel) {
+		this->infoChannel(currChannel);
+	}
+}
+
+void ImageHandler::ImageM::infoChannel(size_t channelIdx) {
+	ImageHandler::Image::infoChannel(channelIdx);
+	size_t matrixSize = this->imgData.at(channelIdx).elements.size();
+	if (matrixSize > 0) {
+		Matrix::dumpMatrixInfo(this->imgData.at(channelIdx), 3, true);
 	}
 }
 
@@ -171,6 +194,27 @@ std::unique_ptr<ImageHandler::ImageV> ImageHandler::getImageDataAsImageV(const c
 	return std::move(imgPtr);
 }
 
+std::unique_ptr<ImageHandler::ImageM> ImageHandler::getImageDataAsImageM(const char* fileName) {
+	std::unique_ptr<ImageHandler::ImageUC> imgUC = ImageHandler::getImageDataAsImageUC(fileName);
+	unsigned char * imgData = imgUC->imgData;
+	int width = imgUC->width;
+	int height = imgUC->height;
+	int nChannels = imgUC->nChannels;
+
+	std::unique_ptr<ImageHandler::ImageM> imgPtr = std::make_unique<ImageHandler::ImageM>(width, height, nChannels);
+	size_t imageRes = width * height;
+	for (size_t channelIdx = 0; channelIdx < nChannels; ++channelIdx) {
+		for (size_t rowIdx = 0; rowIdx < imgPtr->height; ++rowIdx) {
+			for (size_t colIdx = 0; colIdx < imgPtr->width; ++colIdx) {
+				unsigned char* currPixel = imgUC->imgData + ( (rowIdx * imgPtr->width + colIdx) * nChannels );
+				//imgPtr->imgData.push_back(currPixel[channelIdx]);
+				imgPtr->imgData.at(channelIdx).elements.push_back(currPixel[channelIdx]);
+			}
+		}
+	}
+	return std::move(imgPtr);
+}
+
 unsigned char* ImageHandler::imageVToUC(std::unique_ptr<ImageHandler::ImageV>& imageDataPtr) {
 	unsigned char* dataPtr = new unsigned char[
 		imageDataPtr->width * imageDataPtr->height * imageDataPtr->nChannels
@@ -183,6 +227,25 @@ unsigned char* ImageHandler::imageVToUC(std::unique_ptr<ImageHandler::ImageV>& i
 			for (size_t currChannel = 0; currChannel < imageDataPtr->nChannels; ++currChannel) {
 				size_t imageDataIdx = (rowIdx * imageDataPtr->width + colIdx) + (imageRes * currChannel);
 				unsigned char currData = imageDataPtr->imgData.at( imageDataIdx );
+				dataPtr[dataCounter++] = currData;
+			}
+		}
+	}
+	return dataPtr;
+}
+
+unsigned char* ImageHandler::imageMToUC(std::unique_ptr<ImageHandler::ImageM>& imageDataPtr) {
+	unsigned char* dataPtr = new unsigned char[
+		imageDataPtr->width * imageDataPtr->height * imageDataPtr->nChannels
+	]();
+	size_t imageRes = imageDataPtr->width * imageDataPtr->height;
+	size_t dataCounter = 0;
+
+	for (size_t rowIdx = 0; rowIdx < imageDataPtr->height; ++rowIdx) {
+		for (size_t colIdx = 0; colIdx < imageDataPtr->width; ++colIdx) {
+			for (size_t currChannel = 0; currChannel < imageDataPtr->nChannels; ++currChannel) {
+				size_t imageDataIdx = (rowIdx * imageDataPtr->width) + colIdx;
+				unsigned char currData = imageDataPtr->imgData.at(currChannel).elements.at(imageDataIdx);
 				dataPtr[dataCounter++] = currData;
 			}
 		}
@@ -242,6 +305,36 @@ void ImageHandler::modifyData(std::unique_ptr<ImageHandler::ImageV>& imageDataPt
 	imageDataPtr->imgData.at(midpointIdxTemp + (imageDataPtr->width * imageDataPtr->height) * 2) = 255;
 }
 
+void ImageHandler::modifyData(std::unique_ptr<ImageHandler::ImageM>& imageDataPtr) {
+	size_t midpointIdx = size_t( 
+		((imageDataPtr->height * imageDataPtr->width) / 2) - (imageDataPtr->width / 2)
+		);
+	size_t midpointIdxTemp = midpointIdx - 1;
+
+	for (size_t pixelIdx = 0; pixelIdx < 3; ++pixelIdx) {
+		for (size_t channelIdx = 0; channelIdx < imageDataPtr->nChannels; ++channelIdx) {
+			imageDataPtr->imgData.at(channelIdx).elements.at(midpointIdxTemp) = 0;
+		}
+		midpointIdxTemp++;
+	}
+}
+
+void ImageHandler::modifyDataConvolute(std::unique_ptr<ImageHandler::ImageM>& imageDataPtr) {
+	Matrix::MatrixStruct<unsigned char> kernel = Matrix::createMatrix<unsigned char>(6, 6, {
+		0,1,0,1,5,0,
+		1,5,0,1,5,0,
+		0,1,5,0,0,0,
+		1,0,0,1,5,0,
+		0,0,0,1,0,1,
+		5,0,0,1,0,0
+	});
+	for (size_t channelIdx = 0; channelIdx < imageDataPtr->nChannels; ++channelIdx) {
+		if (channelIdx == imageDataPtr->nChannels) {continue;}
+		Matrix::MatrixStruct<unsigned char> channelMatrix = Matrix::convoluteMatrixUsingKernel(imageDataPtr->imgData.at(channelIdx), kernel);
+		imageDataPtr->imgData.at(channelIdx) = channelMatrix;
+	}
+}
+
 int ImageHandler::writeRawImageDataToFile(
 		const char* fileToWrite,
 		size_t width, size_t height, size_t nChannels,
@@ -281,3 +374,18 @@ int ImageHandler::writeImageVDataToFile(
 	delete ucData;
 	return true;
 }
+
+int ImageHandler::writeImageMDataToFile(
+		std::unique_ptr<ImageHandler::ImageM>& imageDataPtr, 
+		const char* fileToWrite
+	) {
+	unsigned char* ucData = ImageHandler::imageMToUC(imageDataPtr);
+	int writeSuccessful = ImageHandler::writeRawImageDataToFile(
+		fileToWrite,
+		imageDataPtr->width, imageDataPtr->height, imageDataPtr->nChannels,
+		ucData
+	);
+	delete ucData;
+	return true;
+}
+
