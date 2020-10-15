@@ -320,18 +320,19 @@ void ImageHandler::modifyData(std::unique_ptr<ImageHandler::ImageM>& imageDataPt
 }
 
 void ImageHandler::modifyDataConvolute(std::unique_ptr<ImageHandler::ImageM>& imageDataPtr) {
-	Matrix::MatrixStruct<unsigned char> kernel = Matrix::createMatrix<unsigned char>(6, 6, {
-		0,1,0,1,5,0,
-		1,5,0,1,5,0,
-		0,1,5,0,0,0,
-		1,0,0,1,5,0,
-		0,0,0,1,0,1,
-		5,0,0,1,0,0
+	Matrix::MatrixStruct<unsigned char> kernel = Matrix::createMatrix<unsigned char>(4, 4, {
+		1,0,1,0,
+		0,1,1,0,
+		1,0,1,0,
+		1,0,0,0
 	});
+	size_t channelToConvoluteIdx = 0;
 	for (size_t channelIdx = 0; channelIdx < imageDataPtr->nChannels; ++channelIdx) {
-		if (channelIdx == imageDataPtr->nChannels) {continue;}
-		Matrix::MatrixStruct<unsigned char> channelMatrix = Matrix::convoluteMatrixUsingKernel(imageDataPtr->imgData.at(channelIdx), kernel);
-		imageDataPtr->imgData.at(channelIdx) = channelMatrix;
+		if (channelIdx == imageDataPtr->nChannels - 1) {continue;}
+		if (channelIdx == channelToConvoluteIdx) {
+			Matrix::MatrixStruct<unsigned char> channelMatrix = Matrix::convoluteMatrixUsingKernel(imageDataPtr->imgData.at(channelIdx), kernel);
+			imageDataPtr->imgData.at(channelIdx) = channelMatrix;
+		}
 	}
 }
 

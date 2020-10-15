@@ -12,7 +12,7 @@ void testImageStruct() {
 	//ImageHandler::writeImageVDataToFile(imgPtrV, "./data/delme2.png");
 
 	// using ImageM object
-	std::unique_ptr<ImageHandler::ImageM> imgPtrM =	ImageHandler::getImageDataAsImageM("./data/princeton.jpg");
+	std::unique_ptr<ImageHandler::ImageM> imgPtrM =	ImageHandler::getImageDataAsImageM("./data/land.jpg");
 	ImageHandler::modifyDataConvolute(imgPtrM);
 	ImageHandler::writeImageMDataToFile(imgPtrM, "./data/delme3.png");
 }
